@@ -1,0 +1,43 @@
+﻿
+
+#include <iostream>
+
+using namespace std;
+double pi = 3.14159265;
+double fakt(double x) {
+    while (x == 1|| x==0) return 1.0;
+    double res = 1.0;
+    for (int i = 2; i <= x; i++) res *= i;
+
+    return res;
+}
+double fu(double x, int man=1000)
+{
+    double sqr = 2.0 / sqrt(pi);
+    double su = 0.0;
+    int n = 0;
+    double sum1=0;
+
+    while (n<man) {
+        double a1 = pow(-1, n);
+        double a2 = pow(x, 2 * n + 1);
+        double a3 = fakt(n);
+        double a4 = 2 * n + 1;
+        double itog = a1 * a2/ (a3 * a4);
+        
+        sum1 = su;
+        su += itog;
+        n++;
+        if ( sum1==su)
+            break;
+       
+    }
+    return su * sqr;
+}
+int main()
+{
+   double x[] = { 0.5, 1.0, 5.0, 10.0 };
+    for (int i = 0; i < 4; i++)
+        cout << fu(x[i])<<endl;
+}
+
