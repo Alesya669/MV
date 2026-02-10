@@ -1,0 +1,86 @@
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+using namespace std;
+
+const double pi = 3.14159265358979323846;
+const double e = 1e-10;
+// Начальный ряд
+double r1(double e) {
+    double sum = 0.0;
+    int n = 1;
+    double term;
+
+    while (true) {
+        term = 1.0 / (n * n + 1);
+        if (term < e) break;
+        sum += term;
+        n++;
+    }
+    return sum;
+}
+
+double kl1(double e) {
+    double sum = 0.0;
+    int n = 1;
+    double term;
+    int kl = 0;
+    while (true) {
+        term = 1.0 / (n * n + 1);
+        kl++;
+        if (term < e) break;
+        sum += term;
+        n++;
+    }
+    return kl;
+} 
+
+
+// Преобразованный ряд,
+double r2(double e) {
+    
+    double sum = 0.0;
+    int n = 1;
+    double term;
+
+    
+    while (true) {
+        term = (1.0 / (n * n)) - (1.0 / (n * n * n * n + n * n));
+        if (abs(term) < e) break;
+        sum += term;
+        n++;
+    }
+    return sum;
+}
+
+double kl2(double e) {
+
+    double sum = 0.0;
+    int n = 1;
+    double term;
+    int kl = 0;
+
+    while (true) {
+        term = (1.0 / (n * n)) - (1.0 / (n * n * n * n + n * n));
+        kl++;
+        if (abs(term) < e) break;
+        sum += term;
+        n++;
+    }
+    return kl;
+}
+
+
+int main() {
+    setlocale(LC_ALL, "rus");
+
+    cout << fixed << setprecision(10);
+
+    cout << "Сумма исходного ряда: " << r1(e) << endl;
+
+   
+    cout << "Сумма преобразованного ряда: " << r2(e) << endl;
+   
+    cout << "Преобразованный ряд сходится в " << kl1(e) / kl2(e) << " раз быстрее" << endl;
+    
+}

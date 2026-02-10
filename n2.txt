@@ -1,0 +1,184 @@
+/*#include <iostream>
+#include <cmath>
+#include <iomanip>
+using namespace std;
+
+long const double pi = 3.14159265358979323846;
+
+long double faa(int n) {
+	if (n <= 1)return 1.0;
+	long double res = 1.0;
+	for (int i = 2; i <= n; i++) {
+		res *= i;
+	}
+	return res;
+}
+
+long double fu(double x, int max_iter = 10000)
+{
+	long double sqr = 2.0 / sqrt(pi);
+	long double sum = 0.0;
+	int n = 0;
+	long double old_sum = 0.0;
+	while (n < max_iter) {
+		long double a1 = pow(-1, n);
+		long double a2 = pow(x, (2 * n + 1));
+		long double a3 = faa(n);
+		long double a4 = 2 * n + 1;
+		long double s = a1 * a2 / (a3 * a4);
+
+		old_sum = sum;
+		sum += s;
+		n++;
+
+
+		if (sum == old_sum) {
+			break;
+		}
+	}
+
+	return sum * sqr;
+}
+
+int main()
+{
+	double x[] = { 0.5, 1.0, 5.0, 10.0 };
+
+	for (int i = 0; i < 4; i++) {
+		long double result = fu(x[i]);
+		cout << fixed << setprecision(8);
+		cout << "x = " << x[i] << ": ";
+		cout << result << endl;
+
+	}
+}*/
+
+
+
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+#include <chrono>
+
+using namespace std;
+
+const double e = 3e-8;
+
+
+double sum_slow(double x, double e) {
+    double s = 0.0;
+    int k = 1;
+    double a1, a2, a;
+    int max_iter = 1000000;
+    while (true) {
+        a1 = 1.0 / sqrt(k * k * k + x);
+        a2 = 1.0 / sqrt(k * k * k - x);
+        a = a1 - a2;
+        s += a;
+        k++;
+
+        if (abs(a) < e && k > 10) break;
+        if (k > max_iter) break;
+    }
+
+    return s;
+}
+
+int count_slow(double x, double e) {
+    int k = 1;
+    double a;
+
+    while (true) {
+        a = 1.0 / sqrt(k * k * k + x) - 1.0 / sqrt(k * k * k - x);
+        k++;
+
+        if (abs(a) < e && k > 10) return k;
+        if (k > 1000000) return k;
+    }
+}
+
+//привели к общему знаменателю (-2x) / sqrt(k^6 - x^2) * (ssqrt(k^3-x) + sqrt(k^3+x)) короче говоря упростили и обьеденили в одну дробь
+double sum_fast(double x, double e) {
+    double s = 0.0;
+    int k = 1;
+    double t;
+
+    while (true) {
+        
+        double a = sqrt(k * k * k + x);
+        double b = sqrt(k * k * k - x);
+        t = -2.0 * x / (a * b * (a + b));
+        s += t;
+        k++;
+
+        if (abs(t) < e && k > 10) break;
+        if (k > 1000000) break;
+    }
+
+    return s;
+}
+
+int count_fast(double x, double e) {
+    int k = 1;
+    double t;
+
+    while (true) {
+       
+        double a = sqrt(k * k * k + x);
+        double b = sqrt(k * k * k - x);
+        t = -2.0 * x / (a * b * (a + b));
+        k++;
+
+        if (abs(t) < e && k > 10) return k;
+        if (k > 1000000) return k;
+    }
+}
+
+//количество членов ряда, необходимое для достижения заданной точности
+int kol(double x, double e) {
+    double est = pow(2.0 * abs(x) / e, 2.0 / 9.0);
+    return max(10, (int)ceil(est));
+}
+
+
+int main() {
+    setlocale(LC_ALL, "rus");
+    cout << fixed << setprecision(10);
+
+
+  
+    double x_values[] = { 0.5, 0.9999999999 };
+    for (int i = 0; i < 2; i++) 
+    {
+        double x = x_values[i];
+    
+   
+
+        cout << "\n x = " << x << endl;
+
+        // А)  Покажите, что каждый ряд сходится.
+        cout << "\nА) Ряды сходятся, так как члены ~1/k^(3/2)" << endl;
+
+        // Б) Сколько примерно членов ряда понадобиться, чтобы просуммировать его c ошибкой по модулю меньшей e
+  
+        int kl = kol(x, e);
+        cout << "\nБ) Нужно примерно " << kl << " членов" << endl;
+
+        // В) Предполагая, что каждое слагаемое будет вычислено за 500 микросекунд,оцените сколько времени понадобится, чтобы в обоих рядах просуммировать то число членов, которое определено в пункте Б).
+
+        cout << "\nВ) Время: " << kl *500.0 * 2 / 1e6 << " секунд" << endl;
+
+      
+        // Д) Вычисления
+        cout << "\nД) Результаты:" << endl;
+
+      
+
+        cout << "  Медленный: s = " << sum_slow(x, e) << ", k = " << count_slow(x, e) << endl;
+
+        cout << "  Быстрый:   s = " << sum_fast(x, e) << ", k = " << count_fast(x, e) << endl;
+
+     
+    }
+ }
+    
