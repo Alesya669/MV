@@ -3,40 +3,45 @@
 #include <iomanip>
 using namespace std;
 
- const double pi = 3.14159265358979323846;
+const double pi = 3.14159265358979323846;
 
- double faa(int n) {
+double faa(int n) {
 	if (n <= 1)return 1.0;
-	 double res = 1.0;
+	double res = 1.0;
 	for (int i = 2; i <= n; i++) {
 		res *= i;
 	}
 	return res;
 }
 
- double fu(double x, int max_iter = 10000)
+double fu(double x, int max_iter = 100)
 {
-	 double sqr = 2.0 / sqrt(pi);
-	 double sum = 0.0;
+	double sqr = 2.0 / sqrt(pi);
+	double sum = 0.0;
 	int n = 0;
-	 double old_sum = 0.0;
-	while (n < max_iter) {
-		 double a1 = pow(-1, n);
-		 double a2 = pow(x, (2 * n + 1));
-		 double a3 = faa(n);
-		 double a4 = 2 * n + 1;
-		 double s = a1 * a2 / (a3 * a4);
-
-		old_sum = sum;
+	double old_sum = 0.0;
+	
+    while (n <= max_iter) {
+		double a1 = pow(-1, n);
+		double a2 = pow(x, (2 * n + 1));
+		double a3 = faa(n);
+		double a4 = 2 * n + 1;
+		double s = a1 * a2 / (a3 * a4);
+        
 		sum += s;
-		n++;
+		
+		
 
 
 		if (sum == old_sum) {
 			break;
 		}
-	}
+        old_sum = sum;
+        n++;
 
+        
+	}
+   
 	return sum * sqr;
 }
 
@@ -45,10 +50,15 @@ int main()
 	double x[] = { 0.5, 1.0, 5.0, 10.0 };
 
 	for (int i = 0; i < 4; i++) {
-		 double result = fu(x[i]);
-		cout << fixed << setprecision(8);
+          double osh = erf(x[i]);
+         
+		double result = fu(x[i]);
+        double ru = fabs(result - osh);
+		cout << fixed << setprecision(10);
 		cout << "x = " << x[i] << ": ";
-		cout << result << endl;
-
+		cout << result <<"   Vstroen:   "<<osh<<"   Raznicha:   "<<ru<< endl;
+      
 	}
+    
+  
 }
