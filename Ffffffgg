@@ -1,0 +1,134 @@
+#include <winsock2.h>
+#include <iostream>
+#include <WS2tcpip.h>
+#include <string>
+#include<string>
+#include <windows.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
+using namespace std;
+
+int main() {
+    setlocale(LC_ALL, "ru");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+
+    WSADATA wsaData;
+
+    int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+    if (result != 0) {
+        cout << "Ошибка WSAStartup " << result << endl;
+    }
+
+
+    SOCKET connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    sockaddr_in server;
+    server.sin_family = AF_INET;
+    server.sin_port = htons(80); 
+
+    //json.org[74.208.236.169]
+    inet_pton(AF_INET, "74.208.236.169", &server.sin_addr);
+
+    if (connect(connectSocket, (SOCKADDR*)&server, sizeof(server)) != SOCKET_ERROR) 
+        cout << "Подключено к серверу" << endl;
+
+
+    char buffer[1024];
+    string message;
+
+    string request =
+        "GET / HTTP/1.1\r\n"
+        "Host: json.org\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+
+    send(connectSocket, request.c_str(), request.length(), 0);
+
+    int bytesReceived ;
+    cout << "Сервер ответил: " << endl;
+    while ((bytesReceived = recv(connectSocket, buffer, sizeof(buffer)-1, 0)) > 0) {
+        buffer[bytesReceived] = '\0';
+        cout << buffer; 
+    }
+
+
+
+    closesocket(connectSocket);
+    WSACleanup();
+
+}
+
+#include <string>
+#include <winsock2.h>
+#include <iostream>
+#include<WS2tcpip.h>
+#include <windows.h>
+#include <thread> 
+
+#pragma comment(lib, "ws2_32.lib")
+
+using namespace std;
+
+void HandleClient(SOCKET clientSocket) {
+    char buffer[1024];
+    int bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (bytes > 0) {
+        string html = "<html><body><h1>C++ Server</h1></body></html>";
+        string response = 
+            "HTTP/1.1 200 OK\r\n"     
+            "Content-Type: text/html; charset=utf-8\r\n"
+            "Content-Length: " + to_string(html.length()) + "\r\n"
+            "Connection: close\r\n"    
+            "\r\n"                  
+            + html;
+
+        send(clientSocket, response.c_str(), response.length(), 0);
+    }
+    closesocket(clientSocket);
+}
+
+int main()
+{
+    setlocale(LC_ALL, "ru");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    //TCP
+
+    WSADATA wsaData;
+
+    int result=WSAStartup(MAKEWORD(2, 2), &wsaData);
+    
+    if (result!=0) {
+        cout << "Ошибка WSAStartup "<<result<<endl;
+    }
+
+    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+
+    sockaddr_in service;                
+    service.sin_family = AF_INET;      
+    service.sin_addr.s_addr = INADDR_ANY;
+    service.sin_port = htons(5555); 
+
+
+
+    if (bind(listenSocket, (SOCKADDR*)&service, sizeof(service)) != SOCKET_ERROR)
+        cout << "Сокет успешно привязан к порту 5555\n";
+
+    if (listen(listenSocket, 1) != SOCKET_ERROR) 
+        cout << "Сервер слушает порт 5555\nОжидание клиента" << endl;
+
+    while (true) {
+        SOCKET newClient = accept(listenSocket, NULL, NULL);
+        if (newClient != INVALID_SOCKET) {
+            thread clientThread(HandleClient, newClient);
+            clientThread.detach(); 
+        }
+    }
+
+    WSACleanup();
+}
+меня вчера просили 3 сети скинуть кстати
