@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru" >
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>33 Forever| Магазин виниловых пластинок</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<style>
+    /* Фикс модального окна */
+    .modal {
+        overflow-y: auto !important;
+        align-items: flex-start !important;
+        padding: 20px !important;
+    }
+
+    .modal-content {
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        margin: 20px auto !important;
+    }
+
+    /* Увеличиваем размер полей */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px !important;
+        padding: 10px !important;
+    }
+
+    /* Делаем блок авторизации видимым */
+    #loginSection {
+        display: block !important;
+        margin-top: 20px !important;
+    }
+
+    #loginSection input {
+        width: 100% !important;
+        padding: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Стиль для множественного выбора */
+    select[multiple] {
+        min-height: 150px;
+    }
+</style>
+<body>
+<!-- Навигация -->
+<nav>
+    <div class="nav-container">
+        <div class="logo">
+            33 Forever
+        </div>
+
+        <ul class="desktop-menu">
+            <li><a href="#home">Главная</a></li>
+            <li class="dropdown">
+                <a href="#vinyls">Пластинки</a>
+                <div class="dropdown-content">
+                    <a href="#rock">Рок</a>
+                    <a href="#jazz">Джаз</a>
+                    <a href="#electronic">Электроника</a>
+                </div>
+            </li>
+            <li><a href="#about">О нас</a></li>
+            <li>
+                <a href="#kontakt" class="nav-button-link">
+                    <button class="nav-contacts-button" id="contactsBtn">
+                        Контакты
+                    </button>
+                </a>
+            </li>
+        </ul>
+
+        <button class="mobile-menu-btn" aria-label="Открыть меню" aria-expanded="false">☰</button>
+    </div>
+</nav>
+
+<!-- Мобильное меню -->
+<div class="mobile-menu">
+    <button class="mobile-menu-close">×</button>
+    <ul>
+        <li><a href="#home">Главная</a></li>
+        <li><a href="#vinyls">Пластинки</a></li>
+        <li><a href="#about">О нас</a></li>
+        <li><a href="#kontakt" class="nav-button-link"><button class="nav-contacts-button" id="mobileContactsBtn">Контакты</button></a></li>
+    </ul>
+</div>
+
+<!-- Шапка с видео -->
+<header id="home">
+    <video class="hero-video" autoplay muted loop>
+        <source src="video.mp4" type="video/mp4">
+        Ваш браузер не поддерживает видео.
+    </video>
+    <div class="video-overlay"></div>
+
+    <div class="header-content">
+        <h1>33 Forever</h1>
+        <p>33⅓ оборота в минуту</p>
+        <button class="contact-btn" id="openModalBtn">
+            Связь с нами
+        </button>
+    </div>
+</header>
+
+<!-- Основной контент -->
+<main>
+    <!-- Слайдер с популярными пластинками -->
+    <section class="container">
+        <h2 class="section-title">Хиты продаж</h2>
+        <div class="slider">
+            <div class="slider-slides">
+                <div class="slider-slide">
+                    <div class="slide-content">
+                        <img src="vinyl1.jpg" alt="Red Hot Chili Peppers">
+                        <div class="slide-text">
+                            <h3>Red Hot Chili Peppers</h3>
+                            <p>Californication 8 июня 1999</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slider-slide">
+                    <div class="slide-content">
+                        <img src="vinyl2.jpg" alt="The Beatles">
+                        <div class="slide-text">
+                            <h3>The Beatles</h3>
+                            <p>A Hard Day's Night, 10 июля 1964</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slider-slide">
+                    <div class="slide-content">
+                        <img src="vinyl3.jpg" alt="AC/DC">
+                        <div class="slide-text">
+                            <h3>AC/DC</h3>
+                            <p>Power Up 2020 года</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="slider-prev">‹</button>
+            <button class="slider-next">›</button>
+        </div>
+    </section>
+
+    <!-- Раздел "О нас" -->
+    <section class="container" id="about">
+        <h2 class="section-title">Наша философия</h2>
+        <div class="about-content">
+            <div class="about-text">
+                <p>33⅓ оборота в минуту — это не просто цифра. Это сердцебиение.
+                    Ритм, который почти столетие заставляет виниловые диски оживать, превращая чёрные круги в окна в иные миры.
+                    Это скорость, при которой музыка дышит — неспешно, глубоко, по-настоящему.</p>
+
+                <p>Почему именно «33»?
+                    В 1948 году мир изменился навсегда. Columbia Records представила формат Long Play (LP), который вращался со скоростью 33⅓ оборота в минуту.
+                    Это был не просто технологический прорыв — это была революция в восприятии музыки.
+                    Вместо 3-4 минут на стороне пластинки, теперь можно было записать целые симфонии, оперы, джазовые сюиты и рок-оперы.
+                    Музыка перестала быть сиюминутным развлечением — она стала путешествием.</p>
+
+                <div class="signature">
+                    <p>С любовью к музыке,<br><strong>Руденко А.А., основательница "33 Forever"</strong></p>
+                </div>
+            </div>
+            <div class="about-image">
+                <div class="placeholder-image">
+                    <img src="onas.jpg" alt="onas" width="400" height="500">
+                    <span>Наша виниловая коллекция</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Каталог пластинок -->
+    <section class="container" id="vinyls">
+        <h2 class="section-title">Коллекция пластинок</h2>
+        <div class="bouquets-grid">
+            <div class="bouquet-card">
+                <div class="bouquet-image">
+                    <img src="vinyl-rock.jpg" alt="Rock Collection">
+                </div>
+                <div class="bouquet-info" id="rock">
+                    <h3>Рок-коллекция</h3>
+                    <p>От классического рока до альтернативы</p>
+                    <p class="price">от 2 500 ₽</p>
+                    <button class="buy-btn">Смотреть</button>
+                </div>
+            </div>
+
+            <div class="bouquet-card">
+                <div class="bouquet-image">
+                    <img src="vinyl-jazz.jpg" alt="Jazz Collection">
+                </div>
+                <div class="bouquet-info" id="jazz">
+                    <h3>Джаз-коллекция</h3>
+                    <p>От модального джаза до фьюжн</p>
+                    <p class="price">от 3 200 ₽</p>
+                    <button class="buy-btn">Смотреть</button>
+                </div>
+            </div>
+
+            <div class="bouquet-card">
+                <div class="bouquet-image">
+                    <img src="vinyl-electronic.jpg" alt="Electronic Collection">
+                </div>
+                <div class="bouquet-info" id="electronic">
+                    <h3>Электроника</h3>
+                    <p>От хауса до эмбиента</p>
+                    <p class="price">от 1 800 ₽</p>
+                    <button class="buy-btn">Смотреть</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Форма обратной связи -->
+<div class="modal" id="feedbackModal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeModalBtn">&times;</span>
+        <h2> Форма обратной связи</h2>
+
+        <form id="feedbackForm" action="rest-api.php" method="POST" enctype="application/json">
+            <div class="form-group">
+                <label for="fullName">ФИО *</label>
+                <input type="text" id="fullName" name="fullName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Телефон *</label>
+                <input type="tel" id="phone" name="phone" required>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Сообщение *</label>
+                <textarea id="message" name="message" required placeholder="Ваш вопрос о виниле или заказ..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="artists">🎵 Ваш любимый исполнитель 90-х *</label>
+                <select id="artists" name="artists[]" multiple size="5" required style="width: 100%; padding: 10px;">
+                    <option value="nirvana">🎸 Nirvana</option>
+                    <option value="radiohead">🎹 Radiohead</option>
+                    <option value="oasis">🥁 Oasis</option>
+                    <option value="backstreet_boys">🎤 Backstreet Boys</option>
+                    <option value="spice_girls">👧 Spice Girls</option>
+                    <option value="splin">🇷🇺 Сплин</option>
+                    <option value="kino">🎸 Кино (Виктор Цой)</option>
+                    <option value="agatha_christie">🖤 Агата Кристи</option>
+                    <option value="metallica">🤘 Metallica</option>
+                    <option value="britney">💃 Britney Spears</option>
+                    <option value="tupac">🔥 Tupac Shakur</option>
+                    <option value="prodigy">⚡ The Prodigy</option>
+                </select>
+                <small style="color: #566777; font-size: 12px;">Для выбора нескольких: Ctrl + клик (или Cmd + клик на Mac)</small>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="privacyPolicy" name="privacyPolicy" required>
+                <label for="privacyPolicy">Я согласен с политикой обработки персональных данных *</label>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">Отправить</span>
+                <span class="btn-loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Отправка...
+                </span>
+            </button>
+
+            <div class="message" id="responseMessage"></div>
+        </form>
+
+        <div id="registrationResult" style="display: none; margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h3 style="color: #155724; margin-bottom: 10px;">✓ Регистрация успешна!</h3>
+            <p><strong>Ваш логин:</strong> <span id="userLogin"></span></p>
+            <p><strong>Ваш пароль:</strong> <span id="userPassword"></span></p>
+            <p><strong>Адрес профиля:</strong> <a href="#" id="profileUrl" target="_blank" style="color: #155724;">Перейти в профиль</a></p>
+            <p style="font-size: 12px; margin-top: 10px; color: #155724;">Сохраните эти данные! Они понадобятся для изменения информации.</p>
+            <button onclick="document.getElementById('registrationResult').style.display='none'" style="margin-top: 10px; padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Закрыть</button>
+        </div>
+
+        <div id="loginSection" style="display: block; margin-top: 20px; padding-top: 20px; border-top: 2px solid #C2C5CE;">
+            <h3 style="color: #566777; margin-bottom: 15px;">🔐 Уже есть аккаунт? Войдите</h3>
+            <div class="form-group">
+                <label>Логин</label>
+                <input type="text" id="loginUsername" placeholder="Введите логин" style="width: 100%; padding: 8px; border: 1px solid #C2C5CE; border-radius: 4px;">
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="loginPassword" placeholder="Введите пароль" style="width: 100%; padding: 8px; border: 1px solid #C2C5CE; border-radius: 4px;">
+            </div>
+            <button id="doLoginBtn" class="submit-btn" style="background-color: #566777;">Войти</button>
+            <div id="loginResult" class="message" style="margin-top: 10px; display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<h4><a id="kontakt">Контакты</a></h4>
+<div>Телефон: +7 (495) 123-45-67</div>
+<div>Email: info@vinylt.ru</div>
+
+<footer id="site-footer">
+    <div class="footer-container">
+        <p>33 1/3 Turns &copy; 2025.</p>
+        <p>Москва, ул. Виниловая, 33 | 10:00-21:00 (Пн-Сб)</p>
+        <p style="margin-top: 10px;">
+            <a href="admin.php" style="color: #EACEAA; text-decoration: none;">🔒 Администратор</a>
+        </p>
+    </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
