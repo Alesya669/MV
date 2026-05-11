@@ -1,7 +1,5 @@
-// Ждем загрузки DOM
 document.addEventListener('DOMContentLoaded', function() {
     
-    // ========== ОСНОВНЫЕ ЭЛЕМЕНТЫ DOM ==========
     const openModalBtn = document.getElementById('openModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const feedbackModal = document.getElementById('feedbackModal');
@@ -11,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const API_URL = 'rest-api.php';
     
-    // ========== ФУНКЦИИ ВАЛИДАЦИИ ==========
     function validateFullName(name) {
         return /^[a-zA-Zа-яА-ЯёЁ\s\-]+$/.test(name) && name.length <= 150;
     }
@@ -48,6 +45,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const existingError = formGroup.querySelector('.field-error');
         if (existingError) existingError.remove();
         field.style.borderColor = '#C2C5CE';
+    }
+    
+    function validateArtists() {
+        const artistsSelect = document.getElementById('artists');
+        const selectedCount = artistsSelect ? artistsSelect.selectedOptions.length : 0;
+        
+        if (selectedCount === 0) {
+            const formGroup = artistsSelect?.closest('.form-group');
+            if (formGroup && !formGroup.querySelector('.field-error')) {
+                const errorElement = document.createElement('div');
+                errorElement.className = 'field-error';
+                errorElement.textContent = 'Выберите хотя бы одного исполнителя (Ctrl + клик для выбора нескольких)';
+                formGroup.appendChild(errorElement);
+            }
+            return false;
+        }
+        
+        const formGroup = artistsSelect?.closest('.form-group');
+        const existingError = formGroup?.querySelector('.field-error');
+        if (existingError) existingError.remove();
+        return true;
     }
     
     function validateForm() {
@@ -97,6 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         } else {
             clearFieldError('message');
+        }
+        
+        if (!validateArtists()) {
+            isValid = false;
         }
         
         if (!privacyPolicy) {
@@ -150,12 +172,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('profileUrl').href = data.profile_url;
             resultDiv.style.display = 'block';
             
-            // Сохраняем в localStorage
             localStorage.setItem('vinyl_login', data.login);
             localStorage.setItem('vinyl_password', data.password);
             localStorage.setItem('vinyl_user_id', data.user_id);
             
-            // Показываем кнопку входа
             const loginSection = document.getElementById('loginSection');
             if (loginSection) {
                 loginSection.style.display = 'block';
@@ -193,7 +213,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('vinyl_login', login);
                 localStorage.setItem('vinyl_password', password);
                 
-                // Загружаем данные пользователя
                 await loadUserData();
             } else {
                 loginResult.textContent = 'Неверный логин или пароль';
@@ -227,7 +246,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('phone').value = data.user.phone || '';
                     document.getElementById('message').value = data.user.bio || '';
                     
-                    // Меняем текст кнопки
+                    // Отмечаем выбранных исполнителей
+                    if (data.user.artists) {
+                        const artistsSelect = document.getElementById('artists');
+                        for (let i = 0; i < artistsSelect.options.length; i++) {
+                            const option = artistsSelect.options[i];
+                            if (data.user.artists.includes(option.value)) {
+                                option.selected = true;
+                            }
+                        }
+                    }
+                    
                     const btnText = submitBtn?.querySelector('.btn-text');
                     if (btnText) btnText.textContent = 'Обновить данные';
                     
@@ -239,9 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // ========== ОТПРАВКА ФОРМЫ ==========
     if (feedbackForm) {
-        // Если JS включен, отменяем стандартную отправку
         feedbackForm.setAttribute('data-js-enabled', 'true');
         
         feedbackForm.addEventListener('submit', async function(e) {
@@ -254,11 +281,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             setLoadingState(true);
             
+            const artistsSelect = document.getElementById('artists');
+            const selectedArtists = Array.from(artistsSelect.selectedOptions).map(opt => opt.value);
+            
             const formData = {
                 fullName: document.getElementById('fullName').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
-                message: document.getElementById('message').value.trim()
+                message: document.getElementById('message').value.trim(),
+                artists: selectedArtists
             };
             
             const userId = localStorage.getItem('vinyl_user_id');
@@ -273,10 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
+                const headers = { 'Content-Type': 'application/json' };
                 if (isAuthenticated) {
                     headers['Authorization'] = 'Basic ' + btoa(localStorage.getItem('vinyl_login') + ':' + localStorage.getItem('vinyl_password'));
                 }
@@ -296,10 +324,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         showRegistrationResult(data);
                     }
                     
-                    if (!data.login && !data.password) {
-                        setTimeout(() => {
-                            closeFeedbackModal();
-                        }, 2000);
+                    if (!data.login && !data.password && !isAuthenticated) {
+                        setTimeout(() => closeFeedbackModal(), 2000);
                     }
                     
                     if (!isAuthenticated && data.user_id) {
@@ -320,20 +346,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ========== ФУНКЦИИ МОДАЛЬНОГО ОКНА ==========
     function openFeedbackModal() {
         if (feedbackModal) {
             feedbackModal.style.display = 'flex';
             history.pushState({ modalOpen: true }, '', '#feedback');
             
-            // Если есть сохраненная авторизация, показываем форму входа
             if (localStorage.getItem('vinyl_login')) {
                 const loginSection = document.getElementById('loginSection');
                 if (loginSection) loginSection.style.display = 'block';
                 loadUserData();
-            } else {
-                const loginSection = document.getElementById('loginSection');
-                if (loginSection) loginSection.style.display = 'block';
             }
         }
     }
@@ -341,13 +362,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function closeFeedbackModal() {
         if (feedbackModal) {
             feedbackModal.style.display = 'none';
-            if (location.hash === '#feedback') {
-                history.back();
-            }
+            if (location.hash === '#feedback') history.back();
         }
     }
     
-    // ========== НАСТРОЙКА ОБРАБОТЧИКОВ ==========
     if (openModalBtn) openModalBtn.addEventListener('click', openFeedbackModal);
     if (closeModalBtn) closeModalBtn.addEventListener('click', closeFeedbackModal);
     
@@ -365,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fullNameInput) {
         fullNameInput.addEventListener('input', function() {
             if (this.value && !validateFullName(this.value)) {
-                showFieldError('fullName', 'ФИО может содержать только буквы, пробелы и дефисы');
+                showFieldError('fullName', 'ФИО может содержать только буквы');
             } else {
                 clearFieldError('fullName');
             }
@@ -376,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (emailInput) {
         emailInput.addEventListener('input', function() {
             if (this.value && !isValidEmail(this.value)) {
-                showFieldError('email', 'Введите корректный email адрес');
+                showFieldError('email', 'Введите корректный email');
             } else {
                 clearFieldError('email');
             }
@@ -398,14 +416,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (messageInput) {
         messageInput.addEventListener('input', function() {
             if (this.value && this.value.length < 4) {
-                showFieldError('message', 'Сообщение должно содержать не менее 4 символов');
+                showFieldError('message', 'Минимум 4 символа');
             } else {
                 clearFieldError('message');
             }
         });
     }
     
-    // ========== СЛАЙДЕР ==========
+    const artistsSelect = document.getElementById('artists');
+    if (artistsSelect) {
+        artistsSelect.addEventListener('change', function() {
+            if (this.selectedOptions.length > 0) {
+                const formGroup = this.closest('.form-group');
+                const existingError = formGroup?.querySelector('.field-error');
+                if (existingError) existingError.remove();
+            }
+        });
+    }
+    
     function initSlider() {
         const sliderSlides = document.querySelector('.slider-slides');
         const sliderPrev = document.querySelector('.slider-prev');
@@ -431,27 +459,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (sliderPrev) sliderPrev.addEventListener('click', prevSlide);
         if (sliderNext) sliderNext.addEventListener('click', nextSlide);
-        
         setInterval(nextSlide, 5000);
     }
     
     initSlider();
     
-    // Обработчик кнопок покупки
     const buyButtons = document.querySelectorAll('.buy-btn');
     buyButtons.forEach(button => {
         button.addEventListener('click', function() {
             const card = this.closest('.bouquet-card');
             if (card) {
                 const title = card.querySelector('h3')?.textContent || 'Товар';
-                const price = card.querySelector('.price')?.textContent || '';
-                alert(`Товар добавлен в корзину!\n${title} - ${price}`);
+                alert(`Товар добавлен в корзину!\n${title}`);
             }
         });
     });
 });
 
-// Функция для анимации контактов
 function animateContacts() {
     alert('📞 Наши контакты:\nТелефон: +7 (495) 123-45-67\nEmail: info@vinylt.ru\nАдрес: Москва, ул. Виниловая, 33');
 }
