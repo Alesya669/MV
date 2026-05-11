@@ -1,11 +1,7 @@
 <?php
 /**
  * REST API для винилового магазина "33 Forever"
- * Поддерживает JSON и XML форматы
- * 
- * POST /rest-api.php - регистрация нового пользователя
- * PUT /rest-api.php?id=X - обновление данных авторизованного пользователя
- * GET /rest-api.php?id=X - получение данных пользователя
+ * Любимые исполнители 90-х
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -13,70 +9,27 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Обработка preflight запросов
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Подключение к БД
 require_once 'db_config.php';
-
-// Запуск сессии для авторизации
 session_start();
-
-// Определяем формат ответа (JSON или XML)
-function detectOutputFormat() {
-    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
-    if (strpos($accept, 'application/xml') !== false || strpos($accept, 'text/xml') !== false) {
-        return 'xml';
-    }
-    return 'json';
-}
 
 function sendResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
-    $format = detectOutputFormat();
-    
-    if ($format === 'xml') {
-        header('Content-Type: application/xml; charset=UTF-8');
-        echo arrayToXml($data, 'response');
-    } else {
-        header('Content-Type: application/json; charset=UTF-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    }
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit();
 }
 
-function arrayToXml($data, $rootNodeName = 'response') {
-    $xml = new SimpleXMLElement("<?xml version=\"1.0\" encoding=\"UTF-8\"?><{$rootNodeName}></{$rootNodeName}>");
-    arrayToXmlRecursive($data, $xml);
-    return $xml->asXML();
-}
-
-function arrayToXmlRecursive($data, &$xml) {
-    foreach ($data as $key => $value) {
-        if (is_numeric($key)) {
-            $key = 'item';
-        }
-        if (is_array($value)) {
-            $subnode = $xml->addChild($key);
-            arrayToXmlRecursive($value, $subnode);
-        } else {
-            $xml->addChild($key, htmlspecialchars((string)$value));
-        }
-    }
-}
-
 function sendError($message, $statusCode = 400) {
-    sendResponse(['error' => $message, 'status' => $statusCode], $statusCode);
+    sendResponse(['success' => false, 'error' => $message], $statusCode);
 }
 
-// Валидация данных (переиспользуем из index.php)
 function validateUserData($data, &$errors) {
     $errors = [];
     
-    // Валидация ФИО
     if (empty($data['fullName'])) {
         $errors['fullName'] = 'ФИО обязательно для заполнения';
     } elseif (strlen($data['fullName']) > 150) {
@@ -85,7 +38,6 @@ function validateUserData($data, &$errors) {
         $errors['fullName'] = 'ФИО может содержать только буквы, пробелы и дефисы';
     }
     
-    // Валидация email
     if (empty($data['email'])) {
         $errors['email'] = 'Email обязателен для заполнения';
     } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
@@ -94,7 +46,6 @@ function validateUserData($data, &$errors) {
         $errors['email'] = 'Email не должен превышать 100 символов';
     }
     
-    // Валидация телефона
     if (empty($data['phone'])) {
         $errors['phone'] = 'Телефон обязателен для заполнения';
     } else {
@@ -106,7 +57,6 @@ function validateUserData($data, &$errors) {
         }
     }
     
-    // Валидация сообщения (биография)
     if (empty($data['message'])) {
         $errors['message'] = 'Сообщение обязательно для заполнения';
     } elseif (strlen($data['message']) < 4) {
@@ -115,34 +65,19 @@ function validateUserData($data, &$errors) {
         $errors['message'] = 'Сообщение слишком длинное';
     }
     
+    if (empty($data['artists']) || !is_array($data['artists']) || count($data['artists']) == 0) {
+        $errors['artists'] = 'Выберите хотя бы одного любимого исполнителя';
+    }
+    
     return empty($errors);
 }
 
-// Получение данных из запроса (JSON или XML)
-function getRequestData() {
-    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-    $input = file_get_contents('php://input');
-    
-    if (strpos($contentType, 'application/json') !== false) {
-        return json_decode($input, true);
-    } elseif (strpos($contentType, 'application/xml') !== false || strpos($contentType, 'text/xml') !== false) {
-        $xml = simplexml_load_string($input);
-        return json_decode(json_encode($xml), true);
-    }
-    
-    // Если не JSON и не XML, пробуем как form-data
-    return $_POST;
-}
-
-// Проверка авторизации (сессия или Basic Auth)
 function checkAuth(&$userId) {
-    // Проверяем сессию
     if (!empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
         $userId = $_SESSION['uid'];
         return true;
     }
     
-    // Проверяем HTTP Basic Auth
     if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW'])) {
         global $db;
         $stmt = $db->prepare("SELECT id FROM application WHERE login = ? AND pass_hash = MD5(?)");
@@ -154,112 +89,85 @@ function checkAuth(&$userId) {
             return true;
         }
     }
-    
     return false;
 }
 
-// Получение пользователя по ID
-function getUserById($id) {
-    global $db;
-    
-    try {
-        $stmt = $db->prepare("SELECT id, fio, email, phone, birth_date, gender, bio, contract, login FROM application WHERE id = ?");
-        $stmt->execute([$id]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($user) {
-            // Получаем языки пользователя
-            $langStmt = $db->prepare("SELECT l.code FROM languages l JOIN app_languages al ON l.id = al.lang_id WHERE al.app_id = ?");
-            $langStmt->execute([$id]);
-            $user['languages'] = $langStmt->fetchAll(PDO::FETCH_COLUMN);
-            $user['profile_url'] = "https://{$_SERVER['HTTP_HOST']}/profile.php?id={$id}";
-        }
-        
-        return $user;
-    } catch (PDOException $e) {
-        error_log('Get user error: ' . $e->getMessage());
-        return null;
-    }
-}
-
-// Маршрутизация
 $method = $_SERVER['REQUEST_METHOD'];
 $requestId = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 try {
     switch ($method) {
         case 'GET':
-            // Получение данных пользователя
             if (!$requestId) {
                 sendError('GET запрос требует параметр id', 400);
             }
+            $stmt = $db->prepare("SELECT id, fio, email, phone, bio FROM application WHERE id = ?");
+            $stmt->execute([$requestId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            $user = getUserById($requestId);
+            if ($user) {
+                $artistStmt = $db->prepare("SELECT ar.code FROM artists ar JOIN user_artists ua ON ar.id = ua.artist_id WHERE ua.user_id = ?");
+                $artistStmt->execute([$requestId]);
+                $user['artists'] = $artistStmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+            
             if (!$user) {
                 sendError('Пользователь не найден', 404);
             }
-            
-            sendResponse($user);
+            sendResponse(['success' => true, 'user' => $user]);
             break;
             
         case 'POST':
-            // Регистрация нового пользователя
-            $data = getRequestData();
-            
-            if (!$data) {
-                sendError('Невалидные входные данные. Ожидается JSON или XML', 400);
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) {
+                sendError('Невалидные входные данные. Ожидается JSON', 400);
             }
             
             $errors = [];
-            if (!validateUserData($data, $errors)) {
-                sendResponse(['errors' => $errors, 'message' => 'Ошибки валидации'], 400);
+            if (!validateUserData($input, $errors)) {
+                sendResponse(['success' => false, 'errors' => $errors], 400);
             }
             
-            // Генерация логина и пароля
-            $login = substr(uniqid('user_'), 0, 10);
+            $login = 'user_' . substr(uniqid(), 0, 8);
             $password = substr(md5(uniqid() . rand()), 0, 8);
             $passHash = md5($password);
             
             try {
                 $db->beginTransaction();
                 
-                // Вставляем нового пользователя
                 $stmt = $db->prepare("INSERT INTO application (fio, phone, email, bio, login, pass_hash) VALUES (?, ?, ?, ?, ?, ?)");
                 $stmt->execute([
-                    $data['fullName'],
-                    $data['phone'],
-                    $data['email'],
-                    $data['message'],
+                    $input['fullName'],
+                    $input['phone'],
+                    $input['email'],
+                    $input['message'],
                     $login,
                     $passHash
                 ]);
                 
                 $app_id = $db->lastInsertId();
                 
-                // Если есть языки, добавляем их (опционально)
-                if (!empty($data['languages']) && is_array($data['languages'])) {
-                    $lang_map = [];
-                    $langStmt = $db->query("SELECT id, code FROM languages");
-                    while ($row = $langStmt->fetch(PDO::FETCH_ASSOC)) {
-                        $lang_map[$row['code']] = $row['id'];
-                    }
-                    
-                    $insertLang = $db->prepare("INSERT INTO app_languages (app_id, lang_id) VALUES (?, ?)");
-                    foreach ($data['languages'] as $lang) {
-                        if (isset($lang_map[$lang])) {
-                            $insertLang->execute([$app_id, $lang_map[$lang]]);
-                        }
+                // Сохраняем исполнителей
+                $artist_map = [];
+                $artistStmt = $db->query("SELECT id, code FROM artists");
+                while ($row = $artistStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $artist_map[$row['code']] = $row['id'];
+                }
+                
+                $insertArtist = $db->prepare("INSERT INTO user_artists (user_id, artist_id) VALUES (?, ?)");
+                foreach ($input['artists'] as $artist) {
+                    if (isset($artist_map[$artist])) {
+                        $insertArtist->execute([$app_id, $artist_map[$artist]]);
                     }
                 }
                 
                 $db->commit();
                 
-                // Формируем ответ
                 $profileUrl = "https://{$_SERVER['HTTP_HOST']}/profile.php?id={$app_id}";
                 
                 sendResponse([
                     'success' => true,
-                    'message' => 'Пользователь успешно зарегистрирован',
+                    'message' => 'Регистрация успешна!',
                     'login' => $login,
                     'password' => $password,
                     'profile_url' => $profileUrl,
@@ -269,72 +177,73 @@ try {
             } catch (PDOException $e) {
                 $db->rollBack();
                 error_log('Registration error: ' . $e->getMessage());
-                sendError('Ошибка сохранения данных. Пожалуйста, попробуйте позже.', 500);
+                sendError('Ошибка сохранения данных', 500);
             }
             break;
             
         case 'PUT':
-            // Обновление данных авторизованного пользователя
             if (!$requestId) {
                 sendError('PUT запрос требует параметр id', 400);
             }
             
             $userId = null;
             if (!checkAuth($userId) || $userId != $requestId) {
-                sendError('Необходима авторизация для редактирования данных', 401);
+                sendError('Необходима авторизация', 401);
             }
             
-            $data = getRequestData();
-            if (!$data) {
-                sendError('Невалидные входные данные. Ожидается JSON или XML', 400);
-            }
-            
-            $errors = [];
-            validateUserData($data, $errors);
-            
-            // Для обновления не все поля обязательны
-            unset($errors['fullName']); // ФИО можно не обновлять
-            unset($errors['email']);    // Email можно не обновлять
-            
-            if (!empty($errors)) {
-                sendResponse(['errors' => $errors, 'message' => 'Ошибки валидации'], 400);
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) {
+                sendError('Невалидные входные данные', 400);
             }
             
             try {
-                // Формируем UPDATE запрос только для переданных полей
                 $updateFields = [];
                 $params = [];
                 
-                if (!empty($data['fullName'])) {
+                if (!empty($input['fullName'])) {
                     $updateFields[] = "fio = ?";
-                    $params[] = $data['fullName'];
+                    $params[] = $input['fullName'];
                 }
-                if (!empty($data['email'])) {
+                if (!empty($input['email'])) {
                     $updateFields[] = "email = ?";
-                    $params[] = $data['email'];
+                    $params[] = $input['email'];
                 }
-                if (!empty($data['phone'])) {
+                if (!empty($input['phone'])) {
                     $updateFields[] = "phone = ?";
-                    $params[] = $data['phone'];
+                    $params[] = $input['phone'];
                 }
-                if (!empty($data['message'])) {
+                if (!empty($input['message'])) {
                     $updateFields[] = "bio = ?";
-                    $params[] = $data['message'];
+                    $params[] = $input['message'];
                 }
                 
-                if (empty($updateFields)) {
-                    sendResponse(['success' => true, 'message' => 'Нет данных для обновления'], 200);
+                if (!empty($updateFields)) {
+                    $params[] = $requestId;
+                    $sql = "UPDATE application SET " . implode(', ', $updateFields) . " WHERE id = ?";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute($params);
                 }
                 
-                $params[] = $requestId;
-                $sql = "UPDATE application SET " . implode(', ', $updateFields) . " WHERE id = ?";
-                $stmt = $db->prepare($sql);
-                $stmt->execute($params);
+                // Обновляем исполнителей
+                if (!empty($input['artists']) && is_array($input['artists'])) {
+                    $delStmt = $db->prepare("DELETE FROM user_artists WHERE user_id = ?");
+                    $delStmt->execute([$requestId]);
+                    
+                    $artist_map = [];
+                    $artistStmt = $db->query("SELECT id, code FROM artists");
+                    while ($row = $artistStmt->fetch(PDO::FETCH_ASSOC)) {
+                        $artist_map[$row['code']] = $row['id'];
+                    }
+                    
+                    $insertArtist = $db->prepare("INSERT INTO user_artists (user_id, artist_id) VALUES (?, ?)");
+                    foreach ($input['artists'] as $artist) {
+                        if (isset($artist_map[$artist])) {
+                            $insertArtist->execute([$requestId, $artist_map[$artist]]);
+                        }
+                    }
+                }
                 
-                sendResponse([
-                    'success' => true,
-                    'message' => 'Данные успешно обновлены'
-                ], 200);
+                sendResponse(['success' => true, 'message' => 'Данные обновлены'], 200);
                 
             } catch (PDOException $e) {
                 error_log('Update error: ' . $e->getMessage());
