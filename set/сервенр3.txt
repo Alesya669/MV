@@ -1,0 +1,72 @@
+// server.cpp
+#include <winsock2.h>
+#include <iostream>
+#include <string>
+#include <windows.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
+using namespace std;
+
+int main() {
+    setlocale(LC_ALL, "ru");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+
+    cout << "=== C++ HTTP СЕРВЕР ===" << endl;
+
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(5555);
+
+    bind(listenSocket, (SOCKADDR*)&addr, sizeof(addr));
+    listen(listenSocket, 5);
+
+    cout << " Сервер запущен на порту 5555" << endl;
+    cout << "http://localhost:5555" << endl;
+    cout << "\n Ожидание подключений... (нажми Ctrl+C для выхода)" << endl;
+
+    // БЕСКОНЕЧНЫЙ ЦИКЛ - сервер не завершается!
+    while (true) {
+        SOCKET clientSocket = accept(listenSocket, NULL, NULL);
+
+        // Читаем запрос и выводим в консоль
+        char buffer[4096] = { 0 };
+        int bytes = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+
+        if (bytes > 0) {
+            buffer[bytes] = '\0';
+            cout << "\n=== Получен запрос ===" << endl;
+            cout << buffer << endl;
+            cout << "======================" << endl;
+        }
+
+        // Отправляем ответ
+        string html = "<h1>OK</h1><p>C++ HTTP Server</p>";
+        string length = to_string(html.length());
+
+        string response =
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: " + length + "\r\n"
+            "Connection: close\r\n"
+            "\r\n" +
+            html;
+
+        send(clientSocket, response.c_str(), response.size(), 0);
+        cout << " Ответ отправлен клиенту" << endl;
+
+        closesocket(clientSocket);
+        // СЕРВЕР НЕ ЗАВЕРШАЕТСЯ - идём на следующий круг
+    }
+
+    closesocket(listenSocket);
+    WSACleanup();
+    return 0;
+}

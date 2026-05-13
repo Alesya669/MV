@@ -1,0 +1,131 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iostream>
+#include <string>
+#include <thread>
+#include <vector>
+#include <windows.h>
+
+#pragma comment(lib, "ws2_32.lib")
+using namespace std;
+
+struct Person {
+    char name[200];
+    int age;
+};
+
+// Функция для обработки каждого клиента в отдельном потоке
+void handleClient(SOCKET clientSocket, sockaddr_in clientAddr) {
+    char buffer[1024];
+    int bytesReceived;
+
+    char ipStr[INET_ADDRSTRLEN];
+    InetNtopA(AF_INET, &clientAddr.sin_addr, ipStr, INET_ADDRSTRLEN);
+
+    cout << "\n[Новый клиент подключился] " << ipStr << ":" << ntohs(clientAddr.sin_port) << endl;
+
+    while (true) {
+        bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+
+        if (bytesReceived <= 0) {
+            cout << "[Клиент " << ipStr << " отключился]" << endl;
+            break;
+        }
+
+        buffer[bytesReceived] = '\0';
+
+        // Проверяем тип данных
+        if (bytesReceived == sizeof(Person)) {
+            // Это структура Person
+            Person* p = (Person*)buffer;
+            cout << "Получена структура от " << ipStr << ": ФИО=" << p->name << ", Возраст=" << p->age << endl;
+
+            // Отправляем обратно (эхо)
+            send(clientSocket, (char*)p, sizeof(Person), 0);
+            cout << "Структура отправлена обратно клиенту" << endl;
+        }
+        else {
+            // Это текст
+            cout << "Получен текст от " << ipStr << ": " << buffer << endl;
+
+            // Отправляем обратно (эхо)
+            send(clientSocket, buffer, bytesReceived, 0);
+            cout << "Текст отправлен обратно клиенту" << endl;
+        }
+    }
+
+    closesocket(clientSocket);
+}
+
+int main() {
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    setlocale(LC_ALL, "rus");
+
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        cerr << "WSAStartup failed" << endl;
+        return 1;
+    }
+
+    // Создаём TCP сокет
+    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == INVALID_SOCKET) {
+        cerr << "Socket creation failed" << endl;
+        WSACleanup();
+        return 1;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(12345);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    // Привязываем сокет
+    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        cerr << "Bind failed" << endl;
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    // Начинаем прослушивание
+    if (listen(serverSocket, 5) == SOCKET_ERROR) {
+        cerr << "Listen failed" << endl;
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout << "========================================" << endl;
+    cout << "МНОГОПОТОЧНЫЙ TCP ЭХО-СЕРВЕР" << endl;
+    cout << "Порт: 12345" << endl;
+    cout << "Ожидание подключений..." << endl;
+    cout << "========================================" << endl;
+
+    vector<thread> threads;
+
+    while (true) {
+        sockaddr_in clientAddr;
+        int clientAddrSize = sizeof(clientAddr);
+        SOCKET clientSocket = accept(serverSocket, (sockaddr*)&clientAddr, &clientAddrSize);
+
+        if (clientSocket == INVALID_SOCKET) {
+            cerr << "Accept failed" << endl;
+            continue;
+        }
+
+        // Создаём новый поток для клиента
+        threads.push_back(thread(handleClient, clientSocket, clientAddr));
+    }
+
+    // Ожидаем завершения всех потоков (никогда не случится, пока сервер работает)
+    for (auto& t : threads) {
+        if (t.joinable()) t.join();
+    }
+
+    closesocket(serverSocket);
+    WSACleanup();
+    return 0;
+}
