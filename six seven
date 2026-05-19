@@ -1,0 +1,235 @@
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+using namespace std;
+const double M_PI = 3.14159265358979323846;
+
+// Функция для форматирования числа с запятой вместо точки
+string format_number(double value) {
+    stringstream ss;
+    ss << fixed << setprecision(4) << value;
+    string s = ss.str();
+    for (char& c : s) {
+        if (c == '.') c = ',';
+    }
+    while (s.back() == '0') s.pop_back();
+    if (s.back() == ',') s.pop_back();
+    return s;
+}
+
+int main() {
+    setlocale(LC_ALL, "rus");
+    srand(time(0));
+
+    int n = 13;
+    int N = 500;  // количество точек для расчётов
+
+    cout << "\n========== ЗАДАНИЕ 1 ==========\n";
+    cout << "Площадь фигуры, ограниченной линиями y=f1(x), y=f2(x), x=0\n";
+
+    double x_min = 0.0, x_max = 20.0;
+    double y_min = 0.0, y_max = 50.0;  // Увеличил до 50, т.к. f2(0) ~ 48.57
+    double rect_area = (x_max - x_min) * (y_max - y_min);
+
+    int M = 0;
+
+    // Файл для точек Задания 1
+    ofstream points1("task1_points.csv");
+    points1 << "x;y;status\n";
+
+    for (int i = 0; i < N; i++) {
+        double x = x_min + ((double)rand() / RAND_MAX) * (x_max - x_min);
+        double y = y_min + ((double)rand() / RAND_MAX) * (y_max - y_min);
+
+        double f1_val = (10.0 * x) / n;
+        double f2_val = 10.0 * (x - 20.0) / (n - 20.0) + 20.0;
+
+        bool inside = (y >= f1_val && y <= f2_val);
+        if (inside) M++;
+
+        points1 << format_number(x) << ";" << format_number(y) << ";"
+            << (inside ? "внутри" : "снаружи") << "\n";
+    }
+    points1.close();
+
+    double ploshad1 = rect_area * M / N;
+
+    // Точная площадь (трапеция/треугольник)
+    double f1_20 = (10.0 * 20) / n;
+    double f2_0 = 10.0 * (0 - 20.0) / (n - 20.0) + 20.0;
+    double tochnaya_ploshad = 0.5 * 20.0 * (f2_0 - f1_20);
+
+    double pogreshnost_abs1 = fabs(ploshad1 - tochnaya_ploshad);
+    double pogreshnost_otn1 = (pogreshnost_abs1 / tochnaya_ploshad) * 100;
+
+    cout << fixed << setprecision(6);
+    cout << "Приближённая площадь = " << ploshad1 << endl;
+    cout << "Точная площадь = " << tochnaya_ploshad << endl;
+    cout << "Абсолютная погрешность = " << pogreshnost_abs1 << endl;
+    cout << "Относительная погрешность = " << pogreshnost_otn1 << "%" << endl;
+
+    // Линии границ для Задания 1
+    ofstream file1("task1_lines.csv");
+    file1 << "x;f1(x);f2(x)\n";
+    for (double x = 0; x <= 20 + 0.01; x += 0.1) {
+        double f1_val = (10.0 * x) / n;
+        double f2_val = 10.0 * (x - 20.0) / (n - 20.0) + 20.0;
+        file1 << format_number(x) << ";" << format_number(f1_val) << ";" << format_number(f2_val) << "\n";
+    }
+    file1.close();
+
+    cout << "\n========== ЗАДАНИЕ 2 ==========\n";
+    cout << "Интеграл \n";//∫√(29 - n·cos²x) dx от 0 до 5
+
+    int N2 = 500;
+    double ymax = sqrt(29.0);  // Максимальное значение под корня ≈5.385
+    int popadaniy = 0;
+
+    // Файл для точек Задания 2
+    ofstream points2("task2_points.csv");
+    points2 << "x;y;status\n";
+
+    for (int i = 0; i < N2; i++) {
+        double x = ((double)rand() / RAND_MAX) * 5.0;
+        double y = ((double)rand() / RAND_MAX) * ymax;
+        double f = sqrt(29.0 - n * cos(x) * cos(x));
+
+        bool inside = (y <= f);
+        if (inside) popadaniy++;
+
+        points2 << format_number(x) << ";" << format_number(y) << ";"
+            << (inside ? "под кривой" : "над кривой") << "\n";
+    }
+    points2.close();
+
+    double integral = (popadaniy * 5.0 * ymax) / N2;
+
+    // Точное значение интеграла (методом трапеций)
+    int steps = 100000;
+    double h = 5.0 / steps;
+    double tochniy_integral = 0;
+    for (int i = 0; i <= steps; i++) {
+        double x = i * h;
+        double coeff = (i == 0 || i == steps) ? 0.5 : 1.0;
+        tochniy_integral += coeff * sqrt(29.0 - n * cos(x) * cos(x));
+    }
+    tochniy_integral *= h;
+
+    double pogreshnost_abs2 = fabs(integral - tochniy_integral);
+    double pogreshnost_otn2 = (pogreshnost_abs2 / tochniy_integral) * 100;
+
+    cout << "Приближённое значение интеграла = " << integral << endl;
+    cout << "Точное значение (метод трапеций) = " << tochniy_integral << endl;
+    cout << "Абсолютная погрешность = " << pogreshnost_abs2 << endl;
+    cout << "Относительная погрешность = " << pogreshnost_otn2 << "%" << endl;
+
+    // Файл с подынтегральной функцией для графика
+    ofstream func2("task2_function.csv");
+    func2 << "x;f(x)\n";
+    for (double x = 0; x <= 5.0 + 0.01; x += 0.05) {
+        func2 << format_number(x) << ";" << format_number(sqrt(29.0 - n * cos(x) * cos(x))) << "\n";
+    }
+    func2.close();
+
+    cout << "\n========== ЗАДАНИЕ 3 ==========\n";
+    cout << "Число Пи через площадь круга радиуса R = n\n";
+
+    int R = n;
+    int N3 = 500;
+    int vnutri = 0;
+
+    ofstream points3("task3_points.csv");
+    points3 << "x;y;status\n";
+
+    for (int i = 0; i < N3; i++) {
+        double x = ((double)rand() / RAND_MAX) * (2.0 * R) - R;
+        double y = ((double)rand() / RAND_MAX) * (2.0 * R) - R;
+        bool inside = (x * x + y * y <= R * R);
+        if (inside) vnutri++;
+
+        points3 << format_number(x) << ";" << format_number(y) << ";"
+            << (inside ? "внутри" : "снаружи") << "\n";
+    }
+    points3.close();
+
+    double pi_priblizhenno = (4.0 * vnutri) / N3;
+    double pi_tochnoe = 3.141592653589793;
+    double pogreshnost_abs3 = fabs(pi_priblizhenno - pi_tochnoe);
+    double pogreshnost_otn3 = (pogreshnost_abs3 / pi_tochnoe) * 100;
+
+    cout << "Приближённое Pi = " << pi_priblizhenno << endl;
+    cout << "Точное Pi = " << pi_tochnoe << endl;
+    cout << "Абсолютная погрешность = " << pogreshnost_abs3 << endl;
+    cout << "Относительная погрешность = " << pogreshnost_otn3 << "%" << endl;
+
+    // Окружность для графика
+    ofstream circle3("task3_circle.csv");
+    circle3 << "x;y\n";
+    for (double phi = 0; phi <= 2 * M_PI + 0.01; phi += 0.05) {
+        double x = R * cos(phi);
+        double y = R * sin(phi);
+        circle3 << format_number(x) << ";" << format_number(y) << "\n";
+    }
+    circle3.close();
+
+    cout << "\n========== ЗАДАНИЕ 4 ==========\n";
+    cout << "Площадь фигуры: \n";//A·cos²φ + B·sin²φ = ρ², где A=n, B=n-10
+
+    double A = n;
+    double B = n - 10;
+
+    double max_radius = sqrt(max(A, B)) + 0.5;  // Запас для прямоугольника
+    double polustorona = max_radius;
+
+    int N4 = 500;
+    int M4 = 0;
+    double S_rect = 4.0 * polustorona * polustorona;
+
+    // Файл для точек Задания 4
+    ofstream points4("task4_points.csv");
+    points4 << "x;y;status\n";
+
+    for (int i = 0; i < N4; i++) {
+        double x = ((double)rand() / RAND_MAX) * (2.0 * polustorona) - polustorona;
+        double y = ((double)rand() / RAND_MAX) * (2.0 * polustorona) - polustorona;
+
+        double r = sqrt(x * x + y * y);
+        double phi = atan2(y, x);
+        if (phi < 0) phi += 2 * M_PI;
+
+        double rho_granica = sqrt(A * cos(phi) * cos(phi) + B * sin(phi) * sin(phi));
+
+        bool inside = (r <= rho_granica);
+        if (inside) M4++;
+
+        points4 << format_number(x) << ";" << format_number(y) << ";"
+            << (inside ? "внутри" : "снаружи") << "\n";
+    }
+    points4.close();
+
+    double ploshad4 = S_rect * M4 / N4;
+    double tochnaya_ploshad4 = M_PI * sqrt(A * B); 
+
+    cout << "Приближённая площадь фигуры = " << ploshad4 << endl;
+    cout << "Площадь ограничивающего прямоугольника = " << S_rect << endl;
+    cout << "Отношение M4/N4 = " << (double)M4 / N4 << endl;
+
+    // Кривая для графика Задания 4
+    ofstream curve4("task4_curve.csv");
+    curve4 << "x;y\n";
+    for (double phi = 0; phi <= 2 * M_PI + 0.01; phi += 0.02) {
+        double rho = sqrt(A * cos(phi) * cos(phi) + B * sin(phi) * sin(phi));
+        double x = rho * cos(phi);
+        double y = rho * sin(phi);
+        curve4 << format_number(x) << ";" << format_number(y) << "\n";
+    }
+    curve4.close();
+
+   
+}
