@@ -27,3 +27,111 @@
 8. select * from employees e where salary > all (select max(salary) from employees e2 where e2.department_id != e.department_id and e2.department_id is not null group by e2.department_id);
 
 9. select distinct e.department_id from employees e where e.salary > all (select avg(e2.salary) from employees e2 where e2.department_id != e.department_id and e2.department_id is not null group by e2.department_id);
+
+-- IMG_8618 / IMG_8613 (иерархия сотрудников, 12 заданий)
+
+1. select e1.employee_id, e1.first_name, e1.last_name, (select count(*) from employees e2 where e2.manager_id = e1.employee_id) as subordinates_count from employees e1;
+
+2. select employee_id, first_name, last_name from (select employee_id, first_name, last_name, level as lvl from employees start with manager_id is null connect by prior employee_id = manager_id) where lvl = 3;
+
+3. select employee_id, first_name, last_name, sys_connect_by_path(last_name, ' -> ') as path from employees where connect_by_isleaf = 1 start with manager_id is null connect by prior employee_id = manager_id;
+
+4. select employee_id, first_name, last_name, connect_by_root last_name as root_manager from employees start with manager_id is null connect by prior employee_id = manager_id;
+
+5. select employee_id, first_name, last_name, salary, level from employees where salary >= 3000 start with manager_id is null connect by prior employee_id = manager_id and prior salary >= 3000;
+
+6. with dept_count as (select department_id, count(*) as cnt from employees where department_id is not null group by department_id), max_cnt as (select max(cnt) as maxc from dept_count) select e.* from employees e where e.department_id in (select department_id from dept_count where cnt = (select maxc from max_cnt));
+
+7. select department_id, avg(salary) as avg_sal from employees where department_id is not null group by department_id having avg(salary) > (select avg(avg(salary)) from employees where department_id is not null group by department_id);
+
+8. select department_id, sum(salary) as total_sal from employees where department_id is not null group by department_id order by total_sal desc fetch first 3 rows only;
+
+9. select employee_id, first_name, last_name, salary, level from (select employee_id, first_name, last_name, salary, manager_id from employees where salary > (select avg(salary) from employees)) start with manager_id is null connect by prior employee_id = manager_id;
+
+10. with dept_count as (select department_id, count(*) as cnt from employees where department_id is not null group by department_id), max_cnt as (select max(cnt) as maxc from dept_count), largest_depts as (select department_id from dept_count where cnt = (select maxc from max_cnt)) select employee_id, first_name, last_name, department_id, level from employees where department_id in (select department_id from largest_depts) start with manager_id is null connect by prior employee_id = manager_id;
+
+11. select max(level) as max_level from employees start with manager_id is null connect by prior employee_id = manager_id;
+
+12. select employee_id, first_name, last_name from (select employee_id, first_name, last_name, level as lvl from employees start with manager_id is null connect by prior employee_id = manager_id) where lvl <= (select max(level) from employees start with manager_id is null connect by prior employee_id = manager_id) - 1;
+
+-- IMG_8612 (иерархия, 12 заданий)
+
+1. select employee_id, first_name, last_name from employees start with last_name = 'King' connect by prior employee_id = manager_id;
+
+2. select employee_id, first_name, last_name from employees start with last_name = 'Smith' connect by prior manager_id = employee_id;
+
+3. select employee_id, first_name, last_name, level from employees start with manager_id is null connect by prior employee_id = manager_id;
+
+4. select employee_id, first_name, last_name, sys_connect_by_path(last_name, ' -> ') as path from employees start with manager_id is null connect by prior employee_id = manager_id;
+
+5. select employee_id, first_name, last_name from employees where not exists (select 1 from employees e2 where e2.manager_id = employees.employee_id);
+
+6. select employee_id, first_name, last_name, level from employees start with manager_id is null connect by prior employee_id = manager_id order by level, last_name;
+
+7. select department_id, count(*) as emp_count, employee_id, first_name, last_name from employees group by department_id, employee_id, first_name, last_name order by department_id;
+
+8. select department_id, sum(salary) as total_sal from employees where department_id is not null group by department_id having sum(salary) > (select avg(sum(salary)) from employees where department_id is not null group by department_id);
+
+9. select e.employee_id, e.first_name, e.last_name, e.salary from employees e where e.salary > (select avg(salary) from employees e2 where e2.department_id = e.department_id);
+
+10. select department_id, avg(salary) as avg_sal from employees where department_id is not null group by department_id order by avg_sal desc fetch first 1 row only;
+
+11. select employee_id, first_name, last_name, salary, level from employees where salary > (select avg(salary) from employees) start with manager_id is null connect by prior employee_id = manager_id;
+
+12. with dept_counts as (select department_id, count(*) as cnt from employees where department_id is not null group by department_id having count(*) > 5) select employee_id, first_name, last_name, department_id, level from employees where department_id in (select department_id from dept_counts) start with manager_id is null connect by prior employee_id = manager_id;
+
+-- IMG_8616 (Neo4j, фильмы и актёры, 15 заданий)
+
+1. match (a:Actor {name: 'конкретный актёр'})-[:ACTED_IN]->(m:Movie) return m.title;
+
+2. match (d:Director)-[:DIRECTED]->(m:Movie) return d.name, collect(m.title) as movies;
+
+3. match (a1:Actor)-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(a2:Actor) where a1 <> a2 return a1.name, a2.name, m.title;
+
+4. match (a:Actor)-[:ACTED_IN]->(m:Movie) return a.name, count(m) as film_count;
+
+5. match (a:Actor)-[:ACTED_IN]->(m:Movie) with a, count(m) as cnt where cnt > 3 return a.name, cnt;
+
+6. match (a:Actor)-[:ACTED_IN]->(m:Movie) return m.title, count(a) as actor_count order by actor_count desc limit 1;
+
+7. match (d:Director)-[:DIRECTED]->(m:Movie) return d.name, avg(m.year) as avg_year;
+
+8. match (m:Movie) where m.title contains 'часть_названия' return m.title;
+
+9. match (a:Actor)-[:ACTED_IN]->(m:Movie) with a, count(m) as cnt set a.veteran = case when cnt >= 5 then 'VeteranActor' else null end;
+
+10. match (a:Actor)-[:ACTED_IN]->(m:Movie) with a, count(m) as cnt set a.rolesCount = cnt;
+
+11. match (a1:Actor)-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(a2:Actor) where a1 <> a2 merge (a1)-[:WORKED_WITH]-(a2);
+
+12. match (m:Movie) where m.year is null set m.deleted = true;
+
+13. match (a1:Actor)-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(a2:Actor) where a1 <> a2 with a1, a2, collect(distinct m) as films foreach(f in films | merge (a1)-[:CO_ACTED_IN {movie: f.title}]-(a2));
+
+14. match p = shortestPath((a1:Actor {name: 'актёр1'})-[:ACTED_IN|WORKED_WITH*]-(a2:Actor {name: 'актёр2'})) return p;
+
+15. unwind ['Фильм1', 'Фильм2', 'Фильм3', 'Фильм4', 'Фильм5'] as title create (m:Movie {title: title, year: null});
+
+-- IMG_8615 (SQL, job_history, 10 заданий)
+
+1. select e.* from employees e where not exists (select 1 from employees e2 where e2.department_id = e.department_id and e2.job_id = e.job_id and e2.employee_id <> e.employee_id);
+
+2. select department_id from employees where department_id is not null group by department_id having min(salary) > (select avg(salary) from employees);
+
+3. with dept_avg as (select department_id, avg(salary) as avg_sal from employees where department_id is not null group by department_id), max_avg as (select max(avg_sal) as max_avg from dept_avg) select e.* from employees e where e.department_id in (select department_id from dept_avg where avg_sal = (select max_avg from max_avg));
+
+4. select distinct c.country_name from countries c join locations l on c.country_id = l.country_id join departments d on l.location_id = d.location_id join employees e on d.department_id = e.department_id group by c.country_name, d.department_id having min(e.salary) = max(e.salary);
+
+5. select distinct e.employee_id, e.first_name, e.last_name from employees e join job_history jh on e.employee_id = jh.employee_id where e.salary > all (select avg(e2.salary) from job_history jh2 join employees e2 on e2.department_id = jh2.department_id where jh2.employee_id = e.employee_id group by jh2.department_id);
+
+6. select distinct department_id from employees where department_id is not null minus select distinct department_id from employees where salary = (select max(salary) from employees);
+
+7. with min_avg_dept as (select department_id from employees where department_id is not null group by department_id having avg(salary) = (select min(avg(salary)) from employees where department_id is not null group by department_id)) select distinct e.employee_id, e.first_name, e.last_name from employees e join job_history jh on e.employee_id = jh.employee_id where not exists (select 1 from job_history jh2 where jh2.employee_id = e.employee_id and jh2.department_id in (select department_id from min_avg_dept));
+
+8. select c.country_name from countries c where not exists (select 1 from locations l join departments d on l.location_id = d.location_id where l.country_id = c.country_id and not exists (select 1 from employees e where e.department_id = d.department_id));
+
+9. select * from employees e where salary > all (select max(salary) from employees e2 where e2.department_id != e.department_id and e2.department_id is not null group by e2.department_id);
+
+10. select distinct e.department_id from employees e where e.salary > all (select avg(e2.salary) from employees e2 where e2.department_id != e.department_id and e2.department_id is not null group by e2.department_id);
+
+Отправлено из мобильной Почты Mail
