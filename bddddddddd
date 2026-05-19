@@ -1,0 +1,29 @@
+8. select c.country_name, avg(e.salary) as avg_sal from employees e join departments d on e.department_id = d.department_id join locations l on d.location_id = l.location_id join countries c on l.country_id = c.country_id group by c.country_name having avg(e.salary) > 6000;
+
+9. select department_id, sum(salary) as total_sal from employees where department_id is not null group by department_id having sum(salary) > (select avg(sum(salary)) from employees group by department_id);
+
+10. select * from employees e where exists (select 1 from employees e2 where e2.department_id = e.department_id and e2.salary > e.salary);
+
+18. select distinct e.employee_id, e.first_name, e.last_name, e.salary from employees e join job_history jh on e.employee_id = jh.employee_id where e.salary > all (select avg(e2.salary) from job_history jh2 join employees e2 on e2.department_id = jh2.department_id where jh2.employee_id = e.employee_id group by jh2.department_id);
+
+19. select c.country_name from countries c join locations l on c.country_id = l.country_id join departments d on l.location_id = d.location_id where not exists (select 1 from departments d2 where d2.location_id = l.location_id and not exists (select 1 from employees e where e.department_id = d2.department_id));
+
+20. select * from employees where salary > all (select avg(salary) from employees where department_id is not null group by department_id);
+
+1. select department_id from employees where department_id is not null group by department_id having min(salary) > (select avg(salary) from employees);
+
+2. with dept_avg as (select department_id, avg(salary) as avg_sal from employees where department_id is not null group by department_id) select e.* from employees e where e.department_id in (select department_id from dept_avg where avg_sal = (select max(avg_sal) from dept_avg));
+
+3. select distinct c.country_name from countries c join locations l on c.country_id = l.country_id join departments d on l.location_id = d.location_id join employees e on d.department_id = e.department_id group by c.country_name, d.department_id having min(e.salary) = max(e.salary);
+
+4. select distinct e.employee_id, e.first_name, e.last_name, e.salary from employees e join job_history jh on e.employee_id = jh.employee_id where e.salary > all (select avg(e2.salary) from job_history jh2 join employees e2 on e2.department_id = jh2.department_id where jh2.employee_id = e.employee_id group by jh2.department_id);
+
+5. select distinct department_id from employees where department_id is not null minus select distinct department_id from employees where salary = (select max(salary) from employees);
+
+6. with min_avg_dept as (select department_id from employees where department_id is not null group by department_id having avg(salary) = (select min(avg(salary)) from employees where department_id is not null group by department_id)) select distinct e.employee_id, e.first_name, e.last_name from employees e join job_history jh on e.employee_id = jh.employee_id where not exists (select 1 from job_history jh2 where jh2.employee_id = e.employee_id and jh2.department_id in (select department_id from min_avg_dept));
+
+7. select c.country_name from countries c where not exists (select 1 from locations l join departments d on l.location_id = d.location_id where l.country_id = c.country_id and not exists (select 1 from employees e where e.department_id = d.department_id));
+
+8. select * from employees e where salary > all (select max(salary) from employees e2 where e2.department_id != e.department_id and e2.department_id is not null group by e2.department_id);
+
+9. select distinct e.department_id from employees e where e.salary > all (select avg(e2.salary) from employees e2 where e2.department_id != e.department_id and e2.department_id is not null group by e2.department_id);
