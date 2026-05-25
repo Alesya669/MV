@@ -1,0 +1,203 @@
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+
+using namespace std;
+const double M_PI = 3.14159265358979323846;
+
+// Подынтегральная функция для задания 2 (π)
+double f_pi(double x) {
+    return 1.0 / (1.0 + x * x);
+}
+
+// Подынтегральная функция для задания 3
+double f3(double x) {
+    if (x >= 0 && x <= 2.0) {
+        return exp(x);
+    }
+    else {
+        return 1/(4.0 - sin(16.0 * M_PI * x));
+    }
+}
+
+// Функция для вычисления erf(x) с помощью численных квадратур
+double erf_num(double x, int n = 1000) {
+    if (x == 0) return 0;
+
+    double h = x / n;
+    double sum = 0.0;
+
+    for (int i = 0; i <= n; i++) {
+        double t = i * h;
+        double f = exp(-t * t);
+
+        if (i == 0 || i == n) sum += f;
+        else if (i % 2 == 1) sum += 4 * f;
+        else sum += 2 * f;
+    }
+
+    sum *= h / 3.0;
+    return (2.0 / sqrt(M_PI)) * sum;
+}
+
+void task1() {
+    cout << " ЗАДАНИЕ 1: Таблица erf(x)\n";
+    cout << fixed << setprecision(8);
+    cout << "    x    |   erf(x)_числ   |   erf(x)_встроенная   |   Погрешность\n";
+    cout << "---------|-----------------|------------------------|--------------\n";
+
+    for (int i = 0; i <= 20; i++) {
+        double x = i * 0.1;
+        double erf_num_val = erf_num(x);
+        double erf_builtin = erf(x);
+        double error = fabs(erf_num_val - erf_builtin);
+
+        cout << "   " << setw(4) << x << "   | "
+            << setw(15) << erf_num_val << " | "
+            << setw(22) << erf_builtin << " | "
+            << scientific << setprecision(5) << error << "\n";
+    }
+    cout << endl;
+}
+
+//  ЗАДАНИЕ 2 
+// Метод прямоугольников
+double pryamougolniki(double a, double b, int n, double (*f)(double)) {
+    double h = (b - a) / n;
+    double sum = 0.0;
+    for (int i = 0; i < n; i++) {
+        double x = a + i * h;
+        sum += f(x);
+    }
+    return sum * h;
+}
+
+// Метод трапеций
+double trapecii(double a, double b, int n, double (*f)(double)) {
+    double h = (b - a) / n;
+    double sum = 0.5 * (f(a) + f(b));
+    for (int i = 1; i < n; i++) {
+        double x = a + i * h;
+        sum += f(x);
+    }
+    return sum * h;
+}
+
+// Сплайн-квадратура 
+double spline_quadrature(double a, double b, int n, double (*f)(double)) {
+    double h = (b - a) / n;
+    double sum = 0.0;
+    for (int i = 0; i < n; i++) {
+        double x0 = a + i * h;
+        double x1 = x0 + h / 2;
+        double x2 = x0 + h;
+        sum += f(x0) + 4 * f(x1) + f(x2);
+    }
+    return sum * (h / 6.0);
+}
+
+void task2() {
+    cout << " ЗАДАНИЕ 2: Вычисление числа PI\n";
+
+    int n_values[] = { 8, 32, 128 };
+    double exact_pi = M_PI;
+
+    cout << setw(6) << "n" << " | "
+        << setw(15) << "Прямоугольники" << " | "
+        << setw(15) << "Трапеции" << " | "
+        << setw(15) << "Сплайн-квадратура" << "\n";
+
+    cout << "-------|-------------------|-----------------|-----------------\n";
+
+    for (int k = 0; k < 3; k++) {
+        int n = n_values[k];
+
+        double I_pr = pryamougolniki(0, 1, n, f_pi);
+        double I_tr = trapecii(0, 1, n, f_pi);
+        double I_simp = spline_quadrature(0, 1, n, f_pi);
+
+        double pi_pr = 4 * I_pr;
+        double pi_tr = 4 * I_tr;
+        double pi_simp = 4 * I_simp;
+
+        double err_pr = fabs(pi_pr - exact_pi);
+        double err_tr = fabs(pi_tr - exact_pi);
+        double err_simp = fabs(pi_simp - exact_pi);
+
+        cout << setw(6) << n << " | "
+            << setw(17) << pi_pr << " | "
+            << setw(17) << pi_tr << " | "
+            << setw(17) << pi_simp << "\n";
+
+        cout << "       | "
+            << "ошибка: " << scientific << setprecision(2) << err_pr << " | "
+            << "ошибка: " << scientific << setprecision(2) << err_tr << " | "
+            << "ошибка: " << scientific << setprecision(2) << err_simp << "\n";
+
+        // Анализ ошибок при разных h (только для первого и второго n)
+        if (k > 0) {
+            double h_prev = 1.0 / n_values[k - 1];
+            double h_curr = 1.0 / n;
+            double ratio_h2 = (h_curr * h_curr) / (h_prev * h_prev);
+           // cout << "  Отношение ошибок при h^2: " << ratio_h2 << "\n";
+        }
+
+        cout << "---------------------------------------------------\n";
+    }
+}
+
+//  ЗАДАНИЕ 3 
+
+double adaptiv_simpson(double a, double b, double (*f)(double), double eps, int max_depth) {
+    double mid = (a + b) / 2;
+    double S = (b - a) / 6 * (f(a) + 4 * f(mid) + f(b));
+    double S_left = (mid - a) / 6 * (f(a) + 4 * f((a + mid) / 2) + f(mid));
+    double S_right = (b - mid) / 6 * (f(mid) + 4 * f((mid + b) / 2) + f(b));
+
+    if (max_depth <= 0 || fabs(S_left + S_right - S) < 15 * eps) {
+        return S_left + S_right;
+    }
+
+    return adaptiv_simpson(a, mid, f, eps / 2, max_depth - 1) +
+        adaptiv_simpson(mid, b, f, eps / 2, max_depth - 1);
+}
+
+void task3() {
+    cout << " ЗАДАНИЕ 3: \n";
+
+
+    // Часть 1: интеграл от e^x на [0,2]
+    double I1_exact = exp(2) - exp(0);
+    double I1_num = spline_quadrature(0, 2, 100, f3);
+
+    // Часть 2: интеграл от  функции на [2,4]
+    int n2 = 320;
+    double I2_num = spline_quadrature(2, 4, n2, f3);
+    double I2_adapt = adaptiv_simpson(2, 4, f3, 1e-8, 30);
+
+    double I_total = I1_num + I2_num;
+    double I_total_adapt = I1_num + I2_adapt;
+
+    cout << "Интеграл e^x на [0,2]:\n";
+    cout << "  точное: " << fixed << setprecision(10) << I1_exact << "\n";
+    cout << "  численное ( n=100): " << I1_num << "\n";
+
+    cout << "\nИнтеграл  функции на [2,4]:\n";
+    cout << "  численное (n=" << n2 << "): " << I2_num << "\n";
+    cout << "  адаптивное: " << I2_adapt << "\n";
+
+    cout << "Общий интеграл: " << I_total << "\n";
+    cout << "Общий адаптивный: " << I_total_adapt << "\n";
+
+    cout << "\nОценка погрешности  " << fabs(I2_adapt - I2_num) << "\n";
+
+   
+}
+
+int main() {
+    setlocale(LC_ALL, "rus");
+    task1();
+    task2();
+    task3();
+
+}
